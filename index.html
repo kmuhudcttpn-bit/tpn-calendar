@@ -517,11 +517,11 @@ function HandoverBar({handovers}){
           style={{background:"rgba(255,255,255,0.25)",border:"1px solid rgba(255,255,255,0.5)",
             color:"#fff",borderRadius:7,padding:"3px 14px",fontSize:14,fontWeight:700}}>+ 新增</button>
       </div>
-      {/* Full-line item list — one row, scrollable horizontally if many */}
-      <div style={{flex:1,overflowX:"auto",overflowY:"hidden",display:"flex",
-        alignItems:"stretch",gap:0,background:"#eef4fb"}}>
+      {/* Vertical stacked rows, one per item */}
+      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",
+        flexDirection:"column",background:"#eef4fb"}}>
         {items.length===0&&(
-          <div style={{display:"flex",alignItems:"center",paddingLeft:20,color:"#94a3b8",fontSize:15}}>
+          <div style={{display:"flex",alignItems:"center",paddingLeft:20,color:"#94a3b8",fontSize:15,flex:1}}>
             尚無交班事項
           </div>
         )}
@@ -561,7 +561,7 @@ function HandoverBar({handovers}){
   );
 }
 
-/* ── HandoverBarItem — full-line card in the bottom bar ───────────────── */
+/* ── HandoverBarItem — full-width row in the bottom bar ──────────────── */
 function HandoverBarItem({h,pc,isLast,onEdit,onDelete}){
   const [menu,setMenu]=useState(false);
   const ref=useRef();
@@ -572,33 +572,29 @@ function HandoverBarItem({h,pc,isLast,onEdit,onDelete}){
     return()=>document.removeEventListener("mousedown",handler);
   },[menu]);
   return(
-    <div ref={ref} style={{position:"relative",flexShrink:0,
-      borderRight:isLast?"none":"1px solid #ccddf0",
-      display:"flex",alignItems:"center"}}>
+    <div ref={ref} style={{position:"relative",
+      borderBottom:isLast?"none":"1px solid #d4e4f5"}}>
       <div onClick={()=>setMenu(v=>!v)}
-        style={{display:"flex",alignItems:"center",gap:10,padding:"0 16px",
-          cursor:"pointer",height:"100%",minWidth:220,maxWidth:360,
-          background:"transparent",transition:"background .12s"}}
+        style={{display:"flex",alignItems:"center",gap:10,padding:"6px 16px",
+          cursor:"pointer",width:"100%",background:"transparent",transition:"background .12s"}}
         onMouseEnter={e=>e.currentTarget.style.background="#dde8f5"}
         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-        {/* Priority badge */}
-        <span style={{background:pc.bg,color:pc.color,borderRadius:5,padding:"3px 9px",
-          fontSize:13,fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{pc.label}</span>
-        {/* Full text — no truncation */}
-        <span style={{color:"#1e3a5f",fontSize:16,fontWeight:500,whiteSpace:"nowrap"}}>{h.text}</span>
+        <span style={{background:pc.bg,color:pc.color,borderRadius:5,padding:"2px 8px",
+          fontSize:12,fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{pc.label}</span>
+        <span style={{color:"#1e3a5f",fontSize:15,fontWeight:500,whiteSpace:"pre-wrap",wordBreak:"break-all"}}>{h.text}</span>
       </div>
       {menu&&(
-        <div style={{position:"absolute",bottom:"100%",left:0,zIndex:150,background:"#fff",
+        <div style={{position:"absolute",bottom:"100%",left:16,zIndex:150,background:"#fff",
           border:"1px solid #ccddf0",borderRadius:10,
-          boxShadow:"0 4px 20px rgba(20,80,160,0.15)",minWidth:130,marginBottom:4}}>
+          boxShadow:"0 4px 20px rgba(20,80,160,0.15)",minWidth:130,marginBottom:2}}>
           <button onClick={()=>{setMenu(false);onEdit();}}
-            style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",
+            style={{display:"block",width:"100%",padding:"10px 16px",background:"none",border:"none",
               color:"#1e3a5f",textAlign:"left",fontSize:15,borderBottom:"1px solid #e8f0fa"}}>✏️ 再編輯</button>
           <button onClick={()=>{setMenu(false);onDelete();}}
-            style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",
+            style={{display:"block",width:"100%",padding:"10px 16px",background:"none",border:"none",
               color:"#dc2626",textAlign:"left",fontSize:15}}>🗑️ 刪除</button>
           <button onClick={()=>setMenu(false)}
-            style={{display:"block",width:"100%",padding:"8px 16px",background:"none",border:"none",
+            style={{display:"block",width:"100%",padding:"7px 16px",background:"none",border:"none",
               color:"#94a3b8",textAlign:"left",fontSize:13}}>取消</button>
         </div>
       )}
