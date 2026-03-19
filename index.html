@@ -414,11 +414,15 @@ function RecurringTab({recurringEvents}){
               <div key={r.id} style={{display:"flex",alignItems:"center",gap:12,background:"#fff",
                 borderRadius:10,padding:"12px 16px",marginBottom:8,boxShadow:"0 1px 4px rgba(20,80,160,0.08)"}}>
                 <div style={{width:12,height:12,borderRadius:"50%",background:r.color,flexShrink:0}}/>
-                <span style={{flex:1,color:"#1e3a5f",fontSize:17,fontWeight:500}}>{r.text}</span>
-                <button onClick={()=>{setEditModal(r);setForm({weekday:r.weekday,text:r.text,color:r.color});}}
-                  style={{background:"#e8eef5",border:"none",color:"#1e3a5f",borderRadius:7,padding:"5px 12px",fontSize:14}}>編輯</button>
-                <button onClick={()=>fbRemove(`recurring/${r.id}`)}
-                  style={{background:"none",border:"none",color:"#dc2626",fontSize:20}}>✕</button>
+                <span style={{flex:1,color:"#1e3a5f",fontSize:16,fontWeight:500}}>{r.text}</span>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={()=>{setEditModal(r);setForm({weekday:r.weekday,text:r.text,color:r.color});}}
+                    style={{background:"#e8eef5",border:"none",color:"#1e3a5f",borderRadius:7,
+                      padding:"6px 14px",fontSize:14,fontWeight:600,cursor:"pointer"}}>✏️ 再編輯</button>
+                  <button onClick={()=>fbRemove(`recurring/${r.id}`)}
+                    style={{background:"#fee2e2",border:"none",color:"#dc2626",borderRadius:7,
+                      padding:"6px 14px",fontSize:14,fontWeight:600,cursor:"pointer"}}>🗑️ 刪除</button>
+                </div>
               </div>
             ))}
           </div>
@@ -604,38 +608,24 @@ function HandoverBarItem({h,pc,isLast,onEdit,onDelete}){
 
 /* ── HandoverCard ─────────────────────────────────────────────────────── */
 function HandoverCard({h,pc,onEdit,onDelete}){
-  const [menu,setMenu]=useState(false);
-  const ref=useRef();
-  useEffect(()=>{
-    if(!menu)return;
-    const handler=e=>{if(ref.current&&!ref.current.contains(e.target))setMenu(false);};
-    document.addEventListener("mousedown",handler);
-    return()=>document.removeEventListener("mousedown",handler);
-  },[menu]);
   return(
-    <div ref={ref} style={{position:"relative"}}>
-      <div onClick={()=>setMenu(v=>!v)}
-        style={{background:"#fff",borderLeft:`5px solid ${pc.color}`,borderRadius:10,
-          padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:12,
-          boxShadow:"0 1px 4px rgba(20,80,160,0.08)"}}>
-        <span style={{background:pc.bg,color:pc.color,borderRadius:5,padding:"3px 9px",
-          fontSize:13,fontWeight:700,flexShrink:0,marginTop:1}}>{pc.label}</span>
-        <div style={{flex:1}}>
-          <div style={{color:"#1e3a5f",fontSize:17,lineHeight:1.5}}>{h.text}</div>
-          {h.date&&<div style={{color:"#94a3b8",fontSize:13,marginTop:4}}>{h.date}</div>}
-        </div>
+    <div style={{background:"#fff",borderLeft:`5px solid ${pc.color}`,borderRadius:10,
+      padding:"12px 16px",display:"flex",alignItems:"center",gap:12,
+      boxShadow:"0 1px 4px rgba(20,80,160,0.08)"}}>
+      <span style={{background:pc.bg,color:pc.color,borderRadius:5,padding:"3px 9px",
+        fontSize:13,fontWeight:700,flexShrink:0}}>{pc.label}</span>
+      <div style={{flex:1}}>
+        <div style={{color:"#1e3a5f",fontSize:16,lineHeight:1.6}}>{h.text}</div>
+        {h.date&&<div style={{color:"#94a3b8",fontSize:12,marginTop:3}}>{h.date}</div>}
       </div>
-      {menu&&(
-        <div style={{position:"absolute",top:"100%",right:0,zIndex:100,background:"#fff",
-          border:"1px solid #ccddf0",borderRadius:10,boxShadow:"0 4px 20px rgba(20,80,160,0.15)",minWidth:130}}>
-          <button onClick={()=>{setMenu(false);onEdit();}}
-            style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",color:"#1e3a5f",textAlign:"left",fontSize:15,borderBottom:"1px solid #e8f0fa"}}>✏️ 再編輯</button>
-          <button onClick={()=>{setMenu(false);onDelete();}}
-            style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",color:"#dc2626",textAlign:"left",fontSize:15}}>🗑️ 刪除</button>
-          <button onClick={()=>setMenu(false)}
-            style={{display:"block",width:"100%",padding:"8px 16px",background:"none",border:"none",color:"#94a3b8",textAlign:"left",fontSize:13}}>取消</button>
-        </div>
-      )}
+      <div style={{display:"flex",gap:6,flexShrink:0}}>
+        <button onClick={onEdit}
+          style={{background:"#e8eef5",border:"none",color:"#1e3a5f",borderRadius:7,
+            padding:"6px 14px",fontSize:14,fontWeight:600,cursor:"pointer"}}>✏️ 再編輯</button>
+        <button onClick={onDelete}
+          style={{background:"#fee2e2",border:"none",color:"#dc2626",borderRadius:7,
+            padding:"6px 14px",fontSize:14,fontWeight:600,cursor:"pointer"}}>🗑️ 刪除</button>
+      </div>
     </div>
   );
 }
@@ -701,6 +691,195 @@ function HandoverTab({handovers}){
   );
 }
 
+/* ── InventoryTab ─────────────────────────────────────────────────────── */
+const DEFAULT_DRUGS = [
+  "N81/β","N82/β","Acemycin 1%","Cefa 5%","Cynevene 2%","Fungzone 0.3%",
+  "Piperacillin 10%","Vancomycin 5%","6-MP solution"
+];
+
+function InvCell({value, path, warn}){
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState("");
+  const inputRef = useRef();
+
+  const start = ()=>{ setDraft(String(value??"")); setEditing(true); };
+  useEffect(()=>{ if(editing && inputRef.current) inputRef.current.focus(); },[editing]);
+
+  const commit = ()=>{
+    const n = draft.trim();
+    if(n !== String(value??"")){
+      const num = n===""?null:(isNaN(Number(n))?n:Number(n));
+      fbSet(path, num);
+    }
+    setEditing(false);
+  };
+
+  const low = warn && value !== null && value !== undefined && Number(value) < Number(warn);
+
+  if(editing) return(
+    <td style={{padding:"4px 6px",textAlign:"center"}}>
+      <input ref={inputRef} value={draft}
+        onChange={e=>setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e=>{if(e.key==="Enter")commit(); if(e.key==="Escape")setEditing(false);}}
+        style={{width:64,textAlign:"center",fontSize:15,border:"1.5px solid #1a6fb5",
+          borderRadius:6,padding:"3px 6px",color:"#1e3a5f",background:"#f0f7ff"}}/>
+    </td>
+  );
+  return(
+    <td onClick={start} style={{padding:"6px 10px",textAlign:"center",cursor:"pointer",
+      fontSize:16,fontWeight:600,
+      color: low?"#dc2626":"#1e3a5f",
+      background: low?"#fff0f0":"transparent",
+      borderRadius:6, userSelect:"none"}}
+      title="點擊修改">
+      {value??<span style={{color:"#b0c4d8",fontWeight:400,fontSize:13}}>—</span>}
+      {low && <span style={{fontSize:11,marginLeft:3,color:"#dc2626"}}>▼</span>}
+    </td>
+  );
+}
+
+function InventoryTab({inventory, setInventory}){
+  const [addModal,  setAddModal]  = useState(false);
+  const [newDrug,   setNewDrug]   = useState("");
+  const [editName,  setEditName]  = useState(null); // id being renamed
+  const [nameDraft, setNameDraft] = useState("");
+
+  // items: sorted by order field
+  const items = Object.entries(inventory||{})
+    .map(([id,v])=>({id,...v}))
+    .sort((a,b)=>(a.order??999)-(b.order??999));
+
+  const addDrug = ()=>{
+    if(!newDrug.trim()) return;
+    const id = Date.now().toString();
+    fbSet(`inventory/${id}`,{name:newDrug.trim(), safeQty:null, centerQty:null, centerSafe:null, erQty:null, order:items.length});
+    setNewDrug(""); setAddModal(false);
+  };
+  const deleteDrug = id => fbRemove(`inventory/${id}`);
+  const commitName = id =>{
+    if(nameDraft.trim()) fbSet(`inventory/${id}/name`, nameDraft.trim());
+    setEditName(null);
+  };
+
+  // seed default drugs if inventory is empty
+  useEffect(()=>{
+    if(inventory !== null && Object.keys(inventory||{}).length === 0){
+      DEFAULT_DRUGS.forEach((name,i)=>{
+        fbSet(`inventory/${Date.now()+i}`,{name, safeQty:null, centerQty:null, centerSafe:null, erQty:null, order:i});
+      });
+    }
+  },[inventory]);
+
+  const COL_W = {name:"22%", safe:"14%", center:"14%", centerSafe:"14%", er:"14%", del:"6%"};
+
+  return(
+    <div style={{padding:"20px 24px",height:"100%",overflowY:"auto",background:"#f4f8fd"}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:22,color:"#1e3a5f"}}>每週安全庫存量</div>
+          <div style={{fontSize:14,color:"#64748b",marginTop:3}}>點擊數字即可修改，即時同步給所有人 · 低於安全庫存會標紅</div>
+        </div>
+        <button onClick={()=>setAddModal(true)}
+          style={{background:"#1a6fb5",border:"none",color:"#fff",borderRadius:10,
+            padding:"9px 20px",fontWeight:700,fontSize:15}}>+ 新增藥品</button>
+      </div>
+
+      {/* Table */}
+      <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(20,80,160,0.09)",overflow:"hidden"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",tableLayout:"fixed"}}>
+          <colgroup>
+            <col style={{width:COL_W.name}}/>
+            <col style={{width:COL_W.safe}}/>
+            <col style={{width:COL_W.center}}/>
+            <col style={{width:COL_W.centerSafe}}/>
+            <col style={{width:COL_W.er}}/>
+            <col style={{width:COL_W.del}}/>
+          </colgroup>
+          <thead>
+            <tr style={{background:"#1a6fb5"}}>
+              {[["藥品名稱","left"],["安全庫存量","center"],["中央目前數量","center"],["中央安全庫存","center"],["ER目前數量","center"],["","center"]]
+                .map(([label,align],i)=>(
+                  <th key={i} style={{padding:"10px 10px",color:"#fff",fontWeight:700,
+                    fontSize:14,textAlign:align,letterSpacing:.5}}>{label}</th>
+                ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.length===0&&(
+              <tr><td colSpan={6} style={{textAlign:"center",padding:"40px",color:"#94a3b8",fontSize:15}}>尚無藥品，請點擊「新增藥品」</td></tr>
+            )}
+            {items.map((item,idx)=>{
+              const rowBg = idx%2===0?"#fff":"#f7fafd";
+              return(
+                <tr key={item.id} style={{background:rowBg,borderBottom:"1px solid #e8f0fa"}}>
+                  {/* Drug name — click to rename */}
+                  <td style={{padding:"6px 10px"}}>
+                    {editName===item.id
+                      ? <input autoFocus value={nameDraft}
+                          onChange={e=>setNameDraft(e.target.value)}
+                          onBlur={()=>commitName(item.id)}
+                          onKeyDown={e=>{if(e.key==="Enter")commitName(item.id); if(e.key==="Escape")setEditName(null);}}
+                          style={{width:"100%",fontSize:15,border:"1.5px solid #1a6fb5",borderRadius:6,
+                            padding:"3px 8px",color:"#1e3a5f"}}/>
+                      : <span onClick={()=>{setEditName(item.id);setNameDraft(item.name||"");}}
+                          style={{fontWeight:600,fontSize:15,color:"#1e3a5f",cursor:"pointer",
+                            display:"block",padding:"2px 0"}}
+                          title="點擊改名">
+                          {item.name}
+                        </span>
+                    }
+                  </td>
+                  <InvCell value={item.safeQty}    path={`inventory/${item.id}/safeQty`}    warn={null}/>
+                  <InvCell value={item.centerQty}  path={`inventory/${item.id}/centerQty`}  warn={item.centerSafe}/>
+                  <InvCell value={item.centerSafe} path={`inventory/${item.id}/centerSafe`} warn={null}/>
+                  <InvCell value={item.erQty}      path={`inventory/${item.id}/erQty`}      warn={item.safeQty}/>
+                  <td style={{textAlign:"center",padding:"4px"}}>
+                    <button onClick={()=>deleteDrug(item.id)}
+                      style={{background:"none",border:"none",color:"#dc2626",fontSize:18,cursor:"pointer",
+                        lineHeight:1,padding:"2px 6px",borderRadius:6}}
+                      title="刪除">✕</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend */}
+      <div style={{display:"flex",gap:20,marginTop:14,color:"#64748b",fontSize:13}}>
+        <span>💡 點擊任一欄位數字即可直接修改</span>
+        <span style={{color:"#dc2626"}}>▼ 低於安全庫存（標紅警示）</span>
+        <span>點擊藥品名稱可改名</span>
+      </div>
+
+      {/* Add drug modal */}
+      {addModal&&(
+        <Modal title="新增藥品" onClose={()=>setAddModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <div style={{fontSize:14,color:"#64748b",marginBottom:8}}>藥品名稱</div>
+              <input autoFocus value={newDrug} onChange={e=>setNewDrug(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&addDrug()}
+                placeholder="例：Vancomycin 5%"
+                style={{width:"100%",background:"#f5f8fc",border:"1px solid #b0c8e0",borderRadius:10,
+                  color:"#1e3a5f",padding:"10px 12px",fontSize:16}}/>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>setAddModal(false)}
+                style={{background:"#e8eef5",border:"none",color:"#374151",borderRadius:9,padding:"9px 20px",fontSize:15}}>取消</button>
+              <button onClick={addDrug}
+                style={{background:"#1a6fb5",border:"none",color:"#fff",borderRadius:9,padding:"9px 20px",fontSize:15,fontWeight:700}}>新增</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 /* ── App ──────────────────────────────────────────────────────────────── */
 function App(){
   const [tab,setTab]=useState(0);
@@ -708,6 +887,7 @@ function App(){
   const [events,setEvents]=useState({});
   const [recurringEvents,setRecurringEvents]=useState({});
   const [handovers,setHandovers]=useState({});
+  const [inventory,setInventory]=useState(null);
 
   useEffect(()=>{
     if(fbReady)return;
@@ -721,10 +901,11 @@ function App(){
     const u1=fbListen("events",    v=>setEvents(v||{}));
     const u2=fbListen("recurring", v=>setRecurringEvents(v||{}));
     const u3=fbListen("handovers", v=>setHandovers(v||{}));
-    return()=>{u1();u2();u3();};
+    const u4=fbListen("inventory", v=>setInventory(v||{}));
+    return()=>{u1();u2();u3();u4();};
   },[fbReady]);
 
-  const TABS=["📅 行事曆","🔁 固定事項","📋 交班管理"];
+  const TABS=["📅 行事曆","🔁 固定事項","📋 交班管理","📦 庫存"];
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100vh",background:"#eef4fb",overflow:"hidden"}}>
@@ -754,7 +935,7 @@ function App(){
             <button key={i} onClick={()=>setTab(i)}
               style={{background:tab===i?"#ffffff":"rgba(255,255,255,0.18)",border:"none",
                 color:tab===i?"#1565c0":"#ffffffdd",borderRadius:10,
-                padding:"9px 22px",fontWeight:tab===i?800:500,fontSize:16,
+                padding:"9px 18px",fontWeight:tab===i?800:500,fontSize:15,
                 boxShadow:tab===i?"0 2px 10px rgba(0,0,0,0.2)":"none"}}>
               {t}
             </button>
@@ -776,9 +957,13 @@ function App(){
         <div style={{flex:1,overflow:"hidden"}}>
           <RecurringTab recurringEvents={recurringEvents}/>
         </div>
-      ):(
+      ):tab===2?(
         <div style={{flex:1,overflow:"hidden"}}>
           <HandoverTab handovers={handovers}/>
+        </div>
+      ):(
+        <div style={{flex:1,overflow:"hidden"}}>
+          <InventoryTab inventory={inventory} setInventory={setInventory}/>
         </div>
       )}
     </div>
